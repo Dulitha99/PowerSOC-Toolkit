@@ -1,24 +1,28 @@
-$TargetExe  = '<TargetExe>'
-$TargetArgs = '<TargetArgs>'
+$TargetExe = Read-Host "Enter executable"
+$TargetArgs = Read-Host "Enter argument keyword"
 
-$MatchingTasks = Get-ScheduledTask | ForEach-Object {
-    $Task = $_
-    foreach ($Action in $Task.Actions) {
-        if ($Action.Execute -and
-            ($Action.Execute -ieq $TargetExe) -and
-            ($Action.Arguments -and $Action.Arguments -like "*$TargetArgs*")) {
+$CsvPath = Join-Path $env:TEMP "ScheduledTasks_Filtered.csv"
+
+$results = Get-ScheduledTask | ForEach-Object {
+    $t = $_
+    foreach ($a in $t.Actions) {
+        if ($a.Execute -and
+            ($a.Execute -ieq $TargetExe) -and
+            ($a.Arguments -and $a.Arguments -like "*$TargetArgs*")) {
 
             [PSCustomObject]@{
-                TaskName    = $Task.TaskName
-                TaskPath    = $Task.TaskPath
-                ActionExe   = $Action.Execute
-                Arguments   = $Action.Arguments
-                RunAsUser   = $Task.Principal.UserId
-                TriggerType = ($Task.Triggers | ForEach-Object { $_.TriggerType }) -join ', '
+                TaskName    = $t.TaskName
+                TaskPath    = $t.TaskPath
+                ActionExe   = $a.Execute
+                Arguments   = $a.Arguments
+                RunAsUser   = $t.Principal.UserId
+                TriggerType = ($t.Triggers | ForEach-Object { $_.TriggerType }) -join ', '
             }
         }
     }
 }
 
-if ($MatchingTasks) { $MatchingTasks | Format-Table -AutoSize }
-else { Write-Output "No scheduled tasks found for $TargetExe with args containing: $TargetArgs" }
+$results | Export-Csv -Path $CsvPath -NoTypeInformation -Encoding UTF8
+
+Write-Host "`nMatches: $($results.Count)"
+Write-Host "File: $CsvPath"
