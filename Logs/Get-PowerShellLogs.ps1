@@ -1,24 +1,39 @@
-$days = Read-Host "Enter number of days"
-if (-not ($days -as [int])) { Write-Host "Invalid input" -ForegroundColor Red; exit }
+$days = 30
+$startDate = (Get-Date).AddDays(-$days)
 
-$startDate = (Get-Date).AddDays( - [int]$days)
-$CsvPath = Join-Path $env:TEMP "PowerShell_4104_Logs.csv"
+$CsvPath = Join-Path $env:TEMP "PowerShell_4104_Logs_Last30Days.csv"
 
-$events = Get-WinEvent -LogName "Microsoft-Windows-PowerShell/Operational" |
-Where-Object { $_.Id -eq 4104 -and $_.TimeCreated -ge $startDate }
+$filter = @{
+    LogName   = "Microsoft-Windows-PowerShell/Operational"
+    Id        = 4104
+    StartTime = $startDate
+}
+
+$events = Get-WinEvent -FilterHashtable $filter -ErrorAction Stop
 
 $results = foreach ($event in $events) {
+
     $msg = $event.Message
-    $script = if ($msg -match "Script Block Text:\s*(.+)") { $matches[1] } else { $msg }
+
+    $script = if ($msg -match "Script Block Text:\s*([\s\S]*)") {
+        $matches[1].Trim()
+    } else {
+        $msg.Trim()
+    }
 
     [PSCustomObject]@{
         TimeCreated = $event.TimeCreated
         RecordID    = $event.RecordId
-        ScriptBlock = $script.Trim()
+        EventID     = $event.Id
+        Provider    = $event.ProviderName
+        MachineName = $event.MachineName
+        ScriptBlock = $script
     }
 }
 
-$results | Export-Csv -Path $CsvPath -NoTypeInformation -Encoding UTF8
+$results |
+    Sort-Object TimeCreated -Descending |
+    Export-Csv -Path $CsvPath -NoTypeInformation -Encoding UTF8
 
-Write-Host "`nExported: $($results.Count) logs"
-Write-Host "File: $CsvPath"
+Write-Host "Exported $($results.Count) PowerShell 4104 events (Last 30 Days)"
+Write-Host "File saved to: $CsvPath"
