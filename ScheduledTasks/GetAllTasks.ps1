@@ -1,8 +1,16 @@
 $CsvPath = Join-Path $env:TEMP "ScheduledTasks_Inventory.csv"
 
 $results = foreach ($t in Get-ScheduledTask) {
-    $info = $null
-    try { $info = Get-ScheduledTaskInfo -TaskName $t.TaskName -TaskPath $t.TaskPath } catch {}
+
+    try {
+        $info = Get-ScheduledTaskInfo -TaskName $t.TaskName -TaskPath $t.TaskPath -ErrorAction Stop
+    } catch {
+        $info = [pscustomobject]@{
+            LastRunTime    = $null
+            NextRunTime    = $null
+            LastTaskResult = $null
+        }
+    }
 
     $actions = foreach ($a in $t.Actions) {
         if ($a.Execute) { ("{0} {1}" -f $a.Execute, $a.Arguments).Trim() }
@@ -30,9 +38,10 @@ $results = foreach ($t in Get-ScheduledTask) {
             Description = $t.Description
         }
     }
-}   
+}
 
 $results | Export-Csv -Path $CsvPath -NoTypeInformation -Encoding UTF8
 
-Write-Host "`nExported: $($results.Count) tasks"
-Write-Host "File: $CsvPath"
+"`nExported: $($results.Count) tasks"
+"File: $CsvPath"
+"Exists: $(Test-Path $CsvPath)"
