@@ -1,16 +1,18 @@
-$results = Get-ChildItem "C:\Users\*\AppData\Local\Microsoft\Outlook\*.ost", "C:\Users\*\AppData\Local\Microsoft\Outlook\*.pst" -ErrorAction SilentlyContinue |
+$results = Get-ChildItem "C:\Users\*\AppData\Local\Microsoft\Outlook\*" -File -Force `
+-ErrorAction SilentlyContinue |
 ForEach-Object {
-    if ($_.BaseName -match '(?i)[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}') {
+    if ($_.Name -match '(?i)[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}') {
         [PSCustomObject]@{
             User         = ($_.FullName -split '\\')[2]
-            Email        = $matches[0]              
+            Email        = $matches[0]
+            FileName     = $_.Name
             LastModified = $_.LastWriteTime
         }
     }
 }
 
 if (-not $results) {
-    Write-Output "No email addresses found in OST/PST filenames under C:\Users\<user>\AppData\Local\Microsoft\Outlook"
+    Write-Output "No email addresses found."
 }
 else {
     $results |
