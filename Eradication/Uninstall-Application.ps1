@@ -21,11 +21,11 @@ if (Test-Path $uninstall) {
         Write-Output "[INFO] Process ID : $($proc.Id)"
         Write-Output "[INFO] Exit Code  : $($proc.ExitCode)"
 
-        Start-Sleep -Seconds 5
+        Start-Sleep -Seconds 6
 
         if (Test-Path $appFolder) {
             Write-Output "[WARNING] Application directory still exists:"
-            Get-ChildItem $appFolder -Force -ErrorAction SilentlyContinue | Select-Object Name,Length,LastWriteTime
+            Get-ChildItem $appFolder -Force -ErrorAction SilentlyContinue | Select-Object Name, Length, LastWriteTime
         }
         else {
             Write-Output "[SUCCESS] Application directory has been removed."
@@ -34,7 +34,7 @@ if (Test-Path $uninstall) {
         Write-Output "[INFO] Recently running processes matching the application folder name:"
         Get-Process -ErrorAction SilentlyContinue | Where-Object {
             $_.Path -like "$appFolder*"
-        } | Select-Object ProcessName,Id,Path
+        } | Select-Object ProcessName, Id, Path
 
     }
     catch {
